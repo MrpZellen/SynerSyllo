@@ -1,0 +1,70 @@
+version: '3.8'
+
+services:
+  frontend:
+    volumes:
+      - ./synersyllo-webpage:/src
+      - /src/node_modules
+    build:
+      context: ./synersyllo-webpage
+      dockerfile: ./Dockerfile.dev
+    image: synersyllo-webpage-my-app:latest
+    ports:
+      - "3000:3000"
+      - "24678:24678" # vite hot reloading
+    env_file:
+      - ./synersyllo-webpage/.env
+    depends_on:
+      - mongo
+    links:
+      - mongo
+
+  busyapi:
+    build:
+      context: ./busybob-ai
+    image: busybob-ai-web:latest
+    ports:
+      - "8000:80"
+    volumes:
+    - ./busybob-ai:/app
+    depends_on:
+      - mongo
+    links:
+      - mongo
+
+  mongo:
+    image: mongo
+    restart: always
+    ports:
+      - "2200:27017"
+    volumes:
+      - mongo-data:/data/db
+
+  mongo-express:
+    image: mongo-express
+    restart: always
+    ports:
+      - "8081:8081"
+    environment:
+      ME_CONFIG_MONGODB_SERVER: mongo
+      ME_CONFIG_BASICAUTH: "false"
+    depends_on:
+      - mongo
+    links:
+      - mongo
+  cron-weekly:
+    build:
+      context: ./cron-weekly
+    image: cron-weekly
+    restart: always
+    ports: 
+      - "2000:2000"
+    env_file:
+      - ./cron-weekly/.env
+    depends_on:
+      - mongo
+    links:
+      - mongo
+volumes:
+  mongo-data:
+
